@@ -27,6 +27,7 @@
 <script>
     window.onload = function () {
 
+        var originalDataSet = [];
 
         var margin = {top: 20, right: 30, bottom: 30, left: 40},
                 width = 960 - margin.left - margin.right,
@@ -52,9 +53,14 @@
                 .append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-        d3.tsv("data.tsv", type, function(error, data) {
-            x.domain(data.map(function(d) { return d.name; }));
-            y.domain([0, d3.max(data, function(d) { return d.value; })]);
+        function drawGraph(keys, data) {
+            x.domain(keys.map(function (d) {
+                return d;
+            }));
+            y.domain([0, d3.max(data)]);
+
+            //clear the chart
+            chart.html("");
 
             chart.append("g")
                     .attr("class", "x axis")
@@ -65,7 +71,9 @@
                     .attr("class", "y axis")
                     .call(yAxis)
                     .append("text")
-                    .attr("transform", "rotate(-90)")
+                    .attr({
+                        transform: 'rotate(-90)'
+                    })
                     .attr("y", 6)
                     .attr("dy", ".71em")
                     .style("text-anchor", "end")
@@ -76,16 +84,41 @@
                     .enter()
                     .append("rect")
                     .attr("class", "bar")
-                    .attr("x", function(d) { return x(d.name); })
-                    .attr("y", function(d) { return y(d.value); })
-                    .attr("height", function(d) { return height - y(d.value); })
+                    .attr("x", function (d, i) {
+                        return x(keys[i]);
+                    })
+                    .attr("y", function (d) {
+                        return y(d);
+                    })
+                    .attr("height", function (d) {
+                        return height - y(d);
+                    })
                     .attr("width", x.rangeBand());
+        }
+
+        function prepareKeys(data) {
+            var keys = Object.keys(data[0]);
+            keys = keys.splice(1);
+            return keys;
+        }
+
+        function prepareDataRow(data, rowIndex) {
+            var dataSlice = Object.keys(data[rowIndex]).map(function (k) {
+                return +data[rowIndex][k]
+            });
+            dataSlice = dataSlice.splice(1);
+            return dataSlice;
+        }
+
+        d3.csv("animal_testing.csv", function (error, data) {
+            originalDataSet = data;
+            var keys = prepareKeys(data);
+            var rowIndex = 0;
+            var dataSlice = prepareDataRow(data, rowIndex);
+            drawGraph(keys, dataSlice);
         });
 
-        function type(d) {
-            d.value = +d.value; // coerce to number
-            return d;
-        }
+
 
 
     };
